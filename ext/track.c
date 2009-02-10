@@ -91,6 +91,44 @@ static VALUE track_media_type(VALUE obj)
 }
 
 /*
+  call-seq: track_codec() -> codec_string
+  
+  Returns the name of the codec.  Only valid for video tracks. Others return nil.
+*/
+static VALUE track_codec(VALUE obj)
+{
+	Media track_media = TRACK_MEDIA(obj);
+  OSType media_type;
+  OSErr osErr = noErr;
+
+	/* restrict codec reporting to video track */
+  GetMediaHandlerDescription(track_media, &media_type, 0, 0);
+  if (media_type != VideoMediaType)
+    return Qnil;
+  
+	SampleDescriptionHandle sample_description = NULL;
+  sample_description = (SampleDescriptionHandle)NewHandle(sizeof(SampleDescription));
+  if (LMGetMemErr() != noErr) {
+    rb_raise(eQuickTime, "Memory Error %d when determining track codec", LMGetMemErr());
+    return Qnil;
+  }
+
+	GetMediaSampleDescription(track_media, 1, sample_description);
+	osErr = GetMoviesError();
+  if (osErr != noErr) {
+    rb_raise(eQuickTime, "Movie Error %d when determining track codec", osErr);
+    DisposeHandle((Handle)sample_description);
+    return Qnil;
+  }
+  
+  UInt8 *codecStr = (*(ImageDescriptionHandle)sample_description)->name;
+
+  return rb_str_new( (char*)codecStr+1, (UInt8)codecStr[0] );
+}
+
+
+
+/*
   call-seq: id() -> quicktime_track_id_int
   
   Returns either id number QuickTime uses to reference this track. 
@@ -243,6 +281,7 @@ void Init_quicktime_track()
   rb_define_method(cTrack, "time_scale", track_time_scale, 0);
   rb_define_method(cTrack, "frame_count", track_frame_count, 0);
   rb_define_method(cTrack, "media_type", track_media_type, 0);
+  rb_define_method(cTrack, "codec", track_codec, 0);
   rb_define_method(cTrack, "id", track_id, 0);
   rb_define_method(cTrack, "delete", track_delete, 0);
   rb_define_method(cTrack, "enabled?", track_enabled, 0);
