@@ -90,6 +90,39 @@ static VALUE track_media_type(VALUE obj)
   }
 }
 
+/*  returns the ImageDescriptionHandle for the track.
+    If it's not a video track, return NULL
+*/
+static ImageDescriptionHandle track_image_description(VALUE obj)
+{
+	Media track_media = TRACK_MEDIA(obj);
+  OSType media_type;
+  OSErr osErr = noErr;
+
+	/* restrict reporting to video track */
+  GetMediaHandlerDescription(track_media, &media_type, 0, 0);
+  if (media_type != VideoMediaType)
+    return NULL;
+  
+	SampleDescriptionHandle sample_description = NULL;
+  sample_description = (SampleDescriptionHandle)NewHandle(sizeof(SampleDescription));
+  if (LMGetMemErr() != noErr) {
+    rb_raise(eQuickTime, "Memory Error %d when determining image description", LMGetMemErr());
+    return NULL;
+  }
+
+	GetMediaSampleDescription(track_media, 1, sample_description);
+	osErr = GetMoviesError();
+  if (osErr != noErr) {
+    rb_raise(eQuickTime, "Movie Error %d when determining image description", osErr);
+    DisposeHandle((Handle)sample_description);
+    return NULL;
+  }
+  
+  return (ImageDescriptionHandle)sample_description;
+}
+
+
 /*
   call-seq: track_codec() -> codec_string
   
@@ -97,35 +130,58 @@ static VALUE track_media_type(VALUE obj)
 */
 static VALUE track_codec(VALUE obj)
 {
-	Media track_media = TRACK_MEDIA(obj);
-  OSType media_type;
-  OSErr osErr = noErr;
-
-	/* restrict codec reporting to video track */
-  GetMediaHandlerDescription(track_media, &media_type, 0, 0);
-  if (media_type != VideoMediaType)
+	ImageDescriptionHandle image_description = track_image_description(obj);
+	
+	if (image_description == NULL)
     return Qnil;
+
+  UInt8 *codecStr = (*image_description)->name;
   
-	SampleDescriptionHandle sample_description = NULL;
-  sample_description = (SampleDescriptionHandle)NewHandle(sizeof(SampleDescription));
-  if (LMGetMemErr() != noErr) {
-    rb_raise(eQuickTime, "Memory Error %d when determining track codec", LMGetMemErr());
-    return Qnil;
-  }
+  VALUE out_str = rb_str_new( (char*)codecStr+1, (UInt8)codecStr[0] );
 
-	GetMediaSampleDescription(track_media, 1, sample_description);
-	osErr = GetMoviesError();
-  if (osErr != noErr) {
-    rb_raise(eQuickTime, "Movie Error %d when determining track codec", osErr);
-    DisposeHandle((Handle)sample_description);
-    return Qnil;
-  }
-  
-  UInt8 *codecStr = (*(ImageDescriptionHandle)sample_description)->name;
+  DisposeHandle((Handle)image_description);
 
-  return rb_str_new( (char*)codecStr+1, (UInt8)codecStr[0] );
+  return out_str;
 }
 
+
+/*
+  call-seq: track_width() -> width_in_pixels
+  
+  Returns the width of track data.  Only valid for video tracks. Others return nil.
+*/
+static VALUE track_width(VALUE obj)
+{
+	ImageDescriptionHandle image_description = track_image_description(obj);
+	
+	if (image_description == NULL)
+    return Qnil;
+
+  short width = (*image_description)->width;
+  
+  DisposeHandle((Handle)image_description);
+
+  return INT2NUM(width);
+}
+
+/*
+  call-seq: track_height() -> height_in_pixels
+  
+  Returns the height of track data.  Only valid for video tracks. Others return nil.
+*/
+static VALUE track_height(VALUE obj)
+{
+	ImageDescriptionHandle image_description = track_image_description(obj);
+	
+	if (image_description == NULL)
+    return Qnil;
+
+  short height = (*image_description)->height;
+  
+  DisposeHandle((Handle)image_description);
+
+  return INT2NUM(height);
+}
 
 
 /*
@@ -281,7 +337,11 @@ void Init_quicktime_track()
   rb_define_method(cTrack, "time_scale", track_time_scale, 0);
   rb_define_method(cTrack, "frame_count", track_frame_count, 0);
   rb_define_method(cTrack, "media_type", track_media_type, 0);
+
   rb_define_method(cTrack, "codec", track_codec, 0);
+  rb_define_method(cTrack, "width", track_width, 0);
+  rb_define_method(cTrack, "height", track_height, 0);
+  
   rb_define_method(cTrack, "id", track_id, 0);
   rb_define_method(cTrack, "delete", track_delete, 0);
   rb_define_method(cTrack, "enabled?", track_enabled, 0);

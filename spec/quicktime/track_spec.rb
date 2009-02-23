@@ -26,6 +26,19 @@ describe QuickTime::Track do
       it "should have a codec of H.264" do
         @track.codec.should == "H.264"
       end
+      
+      it "should have a codec of nil, if audio" do
+        t = @movie.audio_tracks.first
+        t.codec.should == nil
+      end
+      
+      it "should have a width of 60" do
+        @track.width.should == 60
+      end
+      
+      it "should have a height of 50" do
+        @track.height.should == 50
+      end
 
       it "should be able to delete a track" do
         @track.delete
