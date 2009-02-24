@@ -263,6 +263,39 @@ static VALUE track_set_volume(VALUE obj, VALUE volume_obj)
   return Qnil;
 }
 
+
+/*  returns the AudioStreamBasicDescription for the track.
+    If it's not an audio track, return NULL
+*/
+static SoundDescriptionHandle track_audio_description(VALUE obj)
+{
+	Media track_media = TRACK_MEDIA(obj);
+  OSType media_type;
+  OSErr osErr = noErr;
+
+	/* restrict reporting to audio track */
+  GetMediaHandlerDescription(track_media, &media_type, 0, 0);
+  if (media_type != SoundMediaType)
+    return NULL;
+  
+	SoundDescriptionHandle sample_description = NULL;
+  sample_description = (SoundDescriptionHandle)NewHandle(sizeof(SampleDescription));
+  if (LMGetMemErr() != noErr) {
+    rb_raise(eQuickTime, "Memory Error %d when determining audio description", LMGetMemErr());
+    return NULL;
+  }
+
+	GetMediaSampleDescription(track_media, 1, (SampleDescriptionHandle)sample_description);
+	osErr = GetMoviesError();
+  if (osErr != noErr) {
+    rb_raise(eQuickTime, "GetMediaSampleDescription Error %d when determining audio description", osErr);
+    DisposeHandle((Handle)sample_description);
+    return NULL;
+  }
+
+  return sample_description;
+}
+
 /*
   call-seq: offset() -> seconds
   
@@ -326,6 +359,56 @@ static VALUE track_new_text_media(VALUE obj)
   return obj;
 }
 
+
+
+/*
+  call-seq: track_get_audio_channels() -> array_of_channels
+  
+  Returns an array of audio channels, a hash
+  { :assignment => :left_surround },
+  { :assignment => :right_surround },
+  { :assignment => :mono }
+*/
+static VALUE track_get_audio_channels(VALUE obj)
+{
+//	Track track = TRACK(obj);
+
+  /* get the AudioChannelLayout variable field*/
+  AudioChannelLayout *layout = NULL;
+  UInt32 size = 0;
+  UInt32 numChannels = 0;
+  OSStatus osErr;
+
+  osErr = QTGetTrackPropertyInfo(TRACK(obj), kQTPropertyClass_Audio, kQTAudioPropertyID_DeviceChannelLayout, NULL, &size, NULL);
+  if (osErr != noErr || size <= 0) goto bail;
+
+  layout = (AudioChannelLayout*)calloc(1, size);
+  if (layout == NULL) {
+    osErr = memFullErr;
+    goto bail;
+  }
+  
+  osErr = QTGetTrackProperty(TRACK(obj), kQTPropertyClass_Audio, kQTAudioPropertyID_ChannelLayout, size, layout, NULL);
+  if (osErr) goto bail;
+
+  numChannels = (layout->mChannelLayoutTag == kAudioChannelLayoutTag_UseChannelDescriptions) ? layout->mNumberChannelDescriptions : AudioChannelLayoutTag_GetNumberOfChannels(layout->mChannelLayoutTag);
+  
+  free(layout);
+  
+  return INT2NUM(numChannels);
+
+  bail: {
+    rb_raise(eQuickTime, "Error %d when getting audio channels", osErr);
+    //DisposeHandle((Handle)sound_description);
+    free(layout);
+    return Qnil;
+  }
+
+}
+
+
+
+
 void Init_quicktime_track()
 {
   VALUE mQuickTime;
@@ -341,6 +424,7 @@ void Init_quicktime_track()
   rb_define_method(cTrack, "codec", track_codec, 0);
   rb_define_method(cTrack, "width", track_width, 0);
   rb_define_method(cTrack, "height", track_height, 0);
+  rb_define_method(cTrack, "channel_count", track_get_audio_channels, 0);
   
   rb_define_method(cTrack, "id", track_id, 0);
   rb_define_method(cTrack, "delete", track_delete, 0);

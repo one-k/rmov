@@ -26,5 +26,6 @@ module QuickTime
     def text?
       media_type == :text
     end
+    
   end
 end

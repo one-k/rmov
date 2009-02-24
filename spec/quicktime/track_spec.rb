@@ -39,7 +39,7 @@ describe QuickTime::Track do
       it "should have a height of 50" do
         @track.height.should == 50
       end
-
+      
       it "should be able to delete a track" do
         @track.delete
         @movie.video_tracks.should == []
