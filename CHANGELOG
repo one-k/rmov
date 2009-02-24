@@ -1,3 +1,8 @@
+
+* adding more property information from movie and track, such as codec information
+
+1K Studios Forked Version
+
 0.1.4 (October 3rd, 2008)
 
 * adding support for several export_image formats (PNG, JPEG, TIFF, TGA, BMP, PSD)
