@@ -5,14 +5,7 @@ describe QuickTime::Track do
     before(:each) do
       @movie = QuickTime::Movie.open(File.dirname(__FILE__) + '/../fixtures/HD2.mov')
     end
-    
-    it "should have audio channels" do
-      @movie.channel_count.should == 2
-    end
-    
-    
-    
-  
+ 
     describe "HD2.mov video track" do
       before(:each) do
         @track = @movie.video_tracks.first
@@ -33,12 +26,6 @@ describe QuickTime::Track do
         @track.volume.should == 1.0
       end
       
-      it "should have audio channels" do
-        @track.channel_count.should == 2
-      end
-
-      
-
     end
   
   end  

@@ -428,55 +428,6 @@ static VALUE movie_new_track(VALUE obj, VALUE width, VALUE height)
   return track_obj;
 }
 
-
-
-/*
-  call-seq: movie_get_audio_channels() -> array_of_channels
-  
-  Returns an array of audio channels, a hash
-  { :assignment => :left_surround },
-  { :assignment => :right_surround },
-  { :assignment => :mono }
-*/
-static VALUE movie_get_audio_channels(VALUE obj)
-{
-//	M track = MOVIE(obj);
-
-  /* get the AudioChannelLayout variable field*/
-  AudioChannelLayout *layout = NULL;
-  UInt32 size = 0;
-  UInt32 numChannels = 0;
-  OSStatus osErr;
-
-  osErr = QTGetMoviePropertyInfo(MOVIE(obj), kQTPropertyClass_Audio, kQTAudioPropertyID_DeviceChannelLayout, NULL, &size, NULL);
-  if (osErr != noErr || size <= 0) goto bail;
-
-  layout = (AudioChannelLayout*)calloc(1, size);
-  if (layout == NULL) {
-    osErr = memFullErr;
-    goto bail;
-  }
-  
-  osErr = QTGetMovieProperty(MOVIE(obj), kQTPropertyClass_Audio, kQTAudioPropertyID_ChannelLayout, size, layout, NULL);
-  if (osErr) goto bail;
-
-  numChannels = (layout->mChannelLayoutTag == kAudioChannelLayoutTag_UseChannelDescriptions) ? layout->mNumberChannelDescriptions : AudioChannelLayoutTag_GetNumberOfChannels(layout->mChannelLayoutTag);
-  
-  free(layout);
-  
-  return INT2NUM(numChannels);
-
-  bail: {
-    rb_raise(eQuickTime, "Error %d when getting audio channels", osErr);
-    //DisposeHandle((Handle)sound_description);
-    free(layout);
-    return Qnil;
-  }
-
-}
-
-
-
 void Init_quicktime_movie()
 {
   VALUE mQuickTime;
@@ -502,8 +453,5 @@ void Init_quicktime_movie()
   rb_define_method(cMovie, "dispose", movie_dispose, 0);
   rb_define_method(cMovie, "poster_time", movie_get_poster_time, 0);
   rb_define_method(cMovie, "poster_time=", movie_set_poster_time, 1);
-  rb_define_method(cMovie, "new_track", movie_new_track, 2);
-  
-  rb_define_method(cMovie, "channel_count", movie_get_audio_channels, 0);
-  
+  rb_define_method(cMovie, "new_track", movie_new_track, 2);  
 }
