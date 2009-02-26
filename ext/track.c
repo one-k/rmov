@@ -69,6 +69,15 @@ static VALUE track_frame_count(VALUE obj)
   return INT2NUM(GetMediaSampleCount(TRACK_MEDIA(obj)));
 }
 
+/*  helper function, returns media type of the track
+*/
+static OSType track_get_media_type(VALUE obj)
+{
+  OSType media_type;
+  GetMediaHandlerDescription(TRACK_MEDIA(obj), &media_type, 0, 0);  
+  return media_type;
+}
+
 /*
   call-seq: media_type() -> media_type_sym
   
@@ -76,9 +85,8 @@ static VALUE track_frame_count(VALUE obj)
 */
 static VALUE track_media_type(VALUE obj)
 {
-  OSType media_type;
+  OSType media_type = track_get_media_type(obj);
   
-  GetMediaHandlerDescription(TRACK_MEDIA(obj), &media_type, 0, 0);
   if (media_type == SoundMediaType) {
     return ID2SYM(rb_intern("audio"));
   } else if (media_type == VideoMediaType) {
@@ -95,13 +103,10 @@ static VALUE track_media_type(VALUE obj)
 */
 static ImageDescriptionHandle track_image_description(VALUE obj)
 {
-	Media track_media = TRACK_MEDIA(obj);
-  OSType media_type;
-  OSErr osErr = noErr;
+  OSErr osErr;
 
 	/* restrict reporting to video track */
-  GetMediaHandlerDescription(track_media, &media_type, 0, 0);
-  if (media_type != VideoMediaType)
+  if (track_get_media_type(obj) != VideoMediaType)
     return NULL;
   
 	SampleDescriptionHandle sample_description = NULL;
@@ -111,7 +116,7 @@ static ImageDescriptionHandle track_image_description(VALUE obj)
     return NULL;
   }
 
-	GetMediaSampleDescription(track_media, 1, sample_description);
+	GetMediaSampleDescription(TRACK_MEDIA(obj), 1, sample_description);
 	osErr = GetMoviesError();
   if (osErr != noErr) {
     rb_raise(eQuickTime, "Movie Error %d when determining image description", osErr);
@@ -263,39 +268,6 @@ static VALUE track_set_volume(VALUE obj, VALUE volume_obj)
   return Qnil;
 }
 
-
-/*  returns the AudioStreamBasicDescription for the track.
-    If it's not an audio track, return NULL
-*/
-static SoundDescriptionHandle track_audio_description(VALUE obj)
-{
-	Media track_media = TRACK_MEDIA(obj);
-  OSType media_type;
-  OSErr osErr = noErr;
-
-	/* restrict reporting to audio track */
-  GetMediaHandlerDescription(track_media, &media_type, 0, 0);
-  if (media_type != SoundMediaType)
-    return NULL;
-  
-	SoundDescriptionHandle sample_description = NULL;
-  sample_description = (SoundDescriptionHandle)NewHandle(sizeof(SampleDescription));
-  if (LMGetMemErr() != noErr) {
-    rb_raise(eQuickTime, "Memory Error %d when determining audio description", LMGetMemErr());
-    return NULL;
-  }
-
-	GetMediaSampleDescription(track_media, 1, (SampleDescriptionHandle)sample_description);
-	osErr = GetMoviesError();
-  if (osErr != noErr) {
-    rb_raise(eQuickTime, "GetMediaSampleDescription Error %d when determining audio description", osErr);
-    DisposeHandle((Handle)sample_description);
-    return NULL;
-  }
-
-  return sample_description;
-}
-
 /*
   call-seq: offset() -> seconds
   
@@ -359,6 +331,53 @@ static VALUE track_new_text_media(VALUE obj)
   return obj;
 }
 
+/*  helper function to return the channel layouts
+    returns layout == NULL if there is a problem
+*/
+static AudioChannelLayout* track_get_audio_channel_layout(VALUE obj)
+{
+	/* restrict reporting to audio track */
+  if (track_get_media_type(obj) != SoundMediaType) return NULL;
+
+  UInt32 size = 0;
+  OSErr osErr;
+  AudioChannelLayout* layout = NULL;
+
+  osErr = QTGetTrackPropertyInfo(TRACK(obj), kQTPropertyClass_Audio, kQTAudioPropertyID_ChannelLayout, NULL, &size, NULL);
+  if (osErr != noErr || size <= 0) goto bail;
+
+  layout = (AudioChannelLayout*)calloc(1, size);
+  if (layout == NULL) {
+    osErr = memFullErr;
+    goto bail;
+  }
+  
+  osErr = QTGetTrackProperty(TRACK(obj), kQTPropertyClass_Audio, kQTAudioPropertyID_ChannelLayout, size, layout, NULL);
+  if (osErr != noErr) goto bail;
+  
+  return layout;
+
+  /* clean up in the event of an error*/
+  bail:
+    rb_raise(eQuickTime, "Error %d when getting audio channel layout", osErr);
+    free(layout);
+    return NULL;
+}
+
+/*
+  call-seq: track_get_audio_channel_count() -> number_of_channels  
+*/
+static VALUE track_get_audio_channel_count(VALUE obj)
+{
+  AudioChannelLayout *layout = track_get_audio_channel_layout(obj);
+  if (layout == NULL) return Qnil;
+
+  UInt32 numChannels = (layout->mChannelLayoutTag == kAudioChannelLayoutTag_UseChannelDescriptions) ? layout->mNumberChannelDescriptions : AudioChannelLayoutTag_GetNumberOfChannels(layout->mChannelLayoutTag);
+  
+  free(layout);
+  
+  return INT2NUM(numChannels);
+}
 
 void Init_quicktime_track()
 {
@@ -375,6 +394,7 @@ void Init_quicktime_track()
   rb_define_method(cTrack, "codec", track_codec, 0);
   rb_define_method(cTrack, "width", track_width, 0);
   rb_define_method(cTrack, "height", track_height, 0);
+  rb_define_method(cTrack, "channel_count", track_get_audio_channel_count, 0);
   
   rb_define_method(cTrack, "id", track_id, 0);
   rb_define_method(cTrack, "delete", track_delete, 0);

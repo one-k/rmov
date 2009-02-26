@@ -26,6 +26,10 @@ describe QuickTime::Track do
         @track.volume.should == 1.0
       end
       
+      it "should have a channel count" do 
+        @track.channel_count.should == 2
+      end
+      
     end
   
   end  
