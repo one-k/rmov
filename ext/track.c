@@ -379,6 +379,122 @@ static VALUE track_get_audio_channel_count(VALUE obj)
   return INT2NUM(numChannels);
 }
 
+// add a channel hash with a given value(v)
+#define ADD_CHANNEL(ary, c, v) c=rb_hash_new(); rb_ary_push(ary, c); rb_hash_aset(c, ID2SYM(rb_intern("assignment")), ID2SYM(rb_intern(v)))
+
+static char* track_str_for_AudioChannelLabel(label) {
+  
+  char *trackStr = NULL;
+  
+  switch (label) {
+    
+    case kAudioChannelLabel_Left:
+      trackStr = "left";
+      break;
+    case kAudioChannelLabel_Right:
+      trackStr = "right";
+      break;
+    case kAudioChannelLabel_Center:
+      trackStr = "center";
+      break;
+    case kAudioChannelLabel_LFEScreen:
+      trackStr = "LFEScreen";
+      break;
+    case kAudioChannelLabel_LeftSurround:
+      trackStr = "leftSurround";
+      break;
+    case kAudioChannelLabel_RightSurround:
+      trackStr = "rightSurround";
+      break;
+    case kAudioChannelLabel_LeftCenter:
+      trackStr = "leftCenter";
+      break;
+    case kAudioChannelLabel_RightCenter:
+      trackStr = "rightCenter";
+      break;
+    case kAudioChannelLabel_CenterSurround:
+      trackStr = "centerSurround";
+      break;
+    case kAudioChannelLabel_LeftSurroundDirect:
+      trackStr = "leftSurroundDirect";
+      break;
+    case kAudioChannelLabel_RightSurroundDirect:
+      trackStr = "rightSurroundDirect";
+      break;
+    case kAudioChannelLabel_TopCenterSurround:
+      trackStr = "topCenterSurround";
+      break;
+
+    default:
+      rb_raise(eQuickTime, "Not Implemented: AudioChannelLabel in track_get_audio_channel_map : %d", label);
+      break;
+  }
+  
+  return trackStr;
+}
+
+static VALUE track_get_audio_channel_map(VALUE obj)
+{
+  AudioChannelLayout *layout = track_get_audio_channel_layout(obj);
+  if (layout == NULL) return Qnil;
+  
+  VALUE channels = Qnil;
+  UInt32 numChannels, x;
+  VALUE channel;
+  AudioChannelLayoutTag layoutTag = layout->mChannelLayoutTag;
+  
+  if (layoutTag == kAudioChannelLayoutTag_UseChannelDescriptions) {
+    // using the descriptions
+    // not implemented
+    numChannels = layout->mNumberChannelDescriptions;
+    channels = rb_ary_new2(numChannels);
+    
+    // loop through all channels, adding assignment descriptions
+    AudioChannelDescription desc;
+    char *trackStr;
+    for (x=0; x < numChannels; x++) {
+      desc = layout->mChannelDescriptions[x];
+      trackStr = track_str_for_AudioChannelLabel(desc.mChannelLabel);
+      ADD_CHANNEL(channels, channel, trackStr);
+    }
+    
+
+  } else {
+    numChannels = AudioChannelLayoutTag_GetNumberOfChannels(layoutTag);
+    channels = rb_ary_new2(numChannels);
+
+    if (layoutTag == kAudioChannelLayoutTag_UseChannelBitmap) {
+      // use the bitmap approach
+      // not implemented
+      rb_raise(eQuickTime, "Not Implemented: kAudioChannelLayoutTag_UseChannelBitmap in track_get_audio_channel_map");
+
+
+    } else {
+      // using a standard LayoutTag
+      switch (layoutTag) {
+
+        case kAudioChannelLayoutTag_Mono:
+          ADD_CHANNEL(channels, channel, "mono");
+          break;
+        
+        case kAudioChannelLayoutTag_Stereo:
+          ADD_CHANNEL(channels, channel, "left");
+          ADD_CHANNEL(channels, channel, "right");
+          break;
+
+        default:
+          // unsupported
+          rb_raise(eQuickTime, "Unsupported ChannelLayoutTag in track_get_audio_channel_map: %d", layoutTag);
+          break;
+      }
+
+    }
+
+  }
+  
+  return channels;
+}
+
 void Init_quicktime_track()
 {
   VALUE mQuickTime;
@@ -395,6 +511,7 @@ void Init_quicktime_track()
   rb_define_method(cTrack, "width", track_width, 0);
   rb_define_method(cTrack, "height", track_height, 0);
   rb_define_method(cTrack, "channel_count", track_get_audio_channel_count, 0);
+  rb_define_method(cTrack, "channel_map", track_get_audio_channel_map, 0);
   
   rb_define_method(cTrack, "id", track_id, 0);
   rb_define_method(cTrack, "delete", track_delete, 0);

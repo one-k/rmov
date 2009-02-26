@@ -30,8 +30,76 @@ describe QuickTime::Track do
         @track.channel_count.should == 2
       end
       
+      it "should have an audio channel map size" do
+        @track.channel_map.size.should == 2
+      end
+      
+      it "should have an audio channel map with tags" do
+        @track.channel_map[0][:assignment].should == :left
+        @track.channel_map[1][:assignment].should == :right
+      end
+      
+      it "should have all audio tracks > 1 mono" do
+        @movie.audio_tracks[1..-1].each do |tr|
+          tr.channel_map[0][:assignment].should == :mono
+        end
+      end
+
     end
-  
+
   end  
+
+  describe "SD3v2.mov audio tracks" do
+    before(:each) do
+      @movie = QuickTime::Movie.open(File.dirname(__FILE__) + '/../fixtures/SD3v2.mov')
+    end
+    
+    it "has audio track 0 with left/right" do
+      track = @movie.audio_tracks[0]
+      track.channel_map.should_not == nil
+      track.channel_map[0][:assignment].should == :left
+      track.channel_map[1][:assignment].should == :right
+    end
+
+    it "has audio track 1 with left/right" do
+      track = @movie.audio_tracks[1]
+      track.channel_map.should_not == nil
+      track.channel_map[0][:assignment].should == :left
+    end
+    
+    it "has audio tracks with proper assignments" do
+      channel_maps = @movie.audio_tracks.collect {|tr| tr.channel_map}
+      channel_maps.should == [
+        [{:assignment => :left}, {:assignment => :right}],
+        [{:assignment => :left}],
+        [{:assignment => :right}],
+        [{:assignment => :center}],
+        [{:assignment => :LFEScreen}],
+        [{:assignment => :leftSurround}],
+        [{:assignment => :rightSurround}],
+        ]
+    end
+
+  end
   
+  
+  describe "SD1.mov audio tracks" do
+    before(:each) do
+      @movie = QuickTime::Movie.open(File.dirname(__FILE__) + '/../fixtures/SD1.mov')
+    end
+    
+    it "has audio tracks with proper assignments" do
+      channel_maps = @movie.audio_tracks.collect {|tr| tr.channel_map}
+      channel_maps.should == [
+        [{:assignment => :left}, {:assignment => :right}],
+        [{:assignment => :mono}],
+        [{:assignment => :mono}],
+        [{:assignment => :mono}],
+        [{:assignment => :mono}],
+        [{:assignment => :mono}],
+        [{:assignment => :mono}],
+        ]
+    end 
+  end
+
 end
