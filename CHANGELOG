@@ -1,7 +1,12 @@
 
+0.2.1 (February 26, 2009)
+
 * adding more property information from movie and track, such as codec information
 
+* adds audio channel information
+
 0.2.0 1K Studios Forked Version
+    purpose is to expose more reporting about movie, track information reporting
 
 0.1.4 (October 3rd, 2008)
 
