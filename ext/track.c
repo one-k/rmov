@@ -492,6 +492,8 @@ static VALUE track_get_audio_channel_map(VALUE obj)
 
   }
   
+  free(layout);
+  
   return channels;
 }
 
