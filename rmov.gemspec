@@ -2,11 +2,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{rmov}
-  s.version = "0.2.0"
+  s.version = "0.2.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 1.2") if s.respond_to? :required_rubygems_version=
   s.authors = ["Ryan Bates"]
-  s.date = %q{2009-02-24}
+  s.date = %q{2009-02-26}
   s.description = %q{Ruby wrapper for the QuickTime C API.}
   s.email = %q{ryan (at) railscasts (dot) com}
   s.extensions = ["ext/extconf.rb"]
