@@ -35,13 +35,13 @@ describe QuickTime::Track do
       end
       
       it "should have an audio channel map with tags" do
-        @track.channel_map[0][:assignment].should == :left
-        @track.channel_map[1][:assignment].should == :right
+        @track.channel_map[0][:assignment].should == :Left
+        @track.channel_map[1][:assignment].should == :Right
       end
       
       it "should have all audio tracks > 1 mono" do
         @movie.audio_tracks[1..-1].each do |tr|
-          tr.channel_map[0][:assignment].should == :mono
+          tr.channel_map[0][:assignment].should == :Mono
         end
       end
 
@@ -57,26 +57,26 @@ describe QuickTime::Track do
     it "has audio track 0 with left/right" do
       track = @movie.audio_tracks[0]
       track.channel_map.should_not == nil
-      track.channel_map[0][:assignment].should == :left
-      track.channel_map[1][:assignment].should == :right
+      track.channel_map[0][:assignment].should == :Left
+      track.channel_map[1][:assignment].should == :Right
     end
 
     it "has audio track 1 with left/right" do
       track = @movie.audio_tracks[1]
       track.channel_map.should_not == nil
-      track.channel_map[0][:assignment].should == :left
+      track.channel_map[0][:assignment].should == :Left
     end
     
     it "has audio tracks with proper assignments" do
       channel_maps = @movie.audio_tracks.collect {|tr| tr.channel_map}
       channel_maps.should == [
-        [{:assignment => :left}, {:assignment => :right}],
-        [{:assignment => :left}],
-        [{:assignment => :right}],
-        [{:assignment => :center}],
+        [{:assignment => :Left}, {:assignment => :Right}],
+        [{:assignment => :Left}],
+        [{:assignment => :Right}],
+        [{:assignment => :Center}],
         [{:assignment => :LFEScreen}],
-        [{:assignment => :leftSurround}],
-        [{:assignment => :rightSurround}],
+        [{:assignment => :LeftSurround}],
+        [{:assignment => :RightSurround}],
         ]
     end
 
@@ -91,13 +91,13 @@ describe QuickTime::Track do
     it "has audio tracks with proper assignments" do
       channel_maps = @movie.audio_tracks.collect {|tr| tr.channel_map}
       channel_maps.should == [
-        [{:assignment => :left}, {:assignment => :right}],
-        [{:assignment => :mono}],
-        [{:assignment => :mono}],
-        [{:assignment => :mono}],
-        [{:assignment => :mono}],
-        [{:assignment => :mono}],
-        [{:assignment => :mono}],
+        [{:assignment => :Left}, {:assignment => :Right}],
+        [{:assignment => :Mono}],
+        [{:assignment => :Mono}],
+        [{:assignment => :Mono}],
+        [{:assignment => :Mono}],
+        [{:assignment => :Mono}],
+        [{:assignment => :Mono}],
         ]
     end 
   end

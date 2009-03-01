@@ -389,40 +389,94 @@ static char* track_str_for_AudioChannelLabel(label) {
   switch (label) {
     
     case kAudioChannelLabel_Left:
-      trackStr = "left";
+      trackStr = "Left";
       break;
     case kAudioChannelLabel_Right:
-      trackStr = "right";
+      trackStr = "Right";
       break;
     case kAudioChannelLabel_Center:
-      trackStr = "center";
+      trackStr = "Center";
       break;
     case kAudioChannelLabel_LFEScreen:
       trackStr = "LFEScreen";
       break;
     case kAudioChannelLabel_LeftSurround:
-      trackStr = "leftSurround";
+      trackStr = "LeftSurround";
       break;
     case kAudioChannelLabel_RightSurround:
-      trackStr = "rightSurround";
+      trackStr = "RightSurround";
       break;
     case kAudioChannelLabel_LeftCenter:
-      trackStr = "leftCenter";
+      trackStr = "LeftCenter";
       break;
     case kAudioChannelLabel_RightCenter:
-      trackStr = "rightCenter";
+      trackStr = "RightCenter";
       break;
     case kAudioChannelLabel_CenterSurround:
-      trackStr = "centerSurround";
+      trackStr = "CenterSurround";
       break;
     case kAudioChannelLabel_LeftSurroundDirect:
-      trackStr = "leftSurroundDirect";
+      trackStr = "LeftSurroundDirect";
       break;
     case kAudioChannelLabel_RightSurroundDirect:
-      trackStr = "rightSurroundDirect";
+      trackStr = "RightSurroundDirect";
       break;
     case kAudioChannelLabel_TopCenterSurround:
-      trackStr = "topCenterSurround";
+      trackStr = "TopCenterSurround";
+      break;
+    case kAudioChannelLabel_VerticalHeightLeft:
+      trackStr = "VerticalHeightLeft";
+      break;
+    case kAudioChannelLabel_VerticalHeightCenter:
+      trackStr = "VerticalHeightCenter";
+      break;
+    case kAudioChannelLabel_VerticalHeightRight:
+      trackStr = "VerticalHeightRight";
+      break;
+    case kAudioChannelLabel_TopBackLeft:
+      trackStr = "TopBackLeft";
+      break;
+    case kAudioChannelLabel_TopBackCenter:
+      trackStr = "TopBackCenter";
+      break;
+    case kAudioChannelLabel_TopBackRight:
+      trackStr = "TopBackRight";
+      break;
+    case kAudioChannelLabel_RearSurroundLeft:
+      trackStr = "RearSurroundLeft";
+      break;
+    case kAudioChannelLabel_RearSurroundRight:
+      trackStr = "RearSurroundRight";
+      break;
+    case kAudioChannelLabel_LeftWide:
+      trackStr = "LeftWide";
+      break;
+    case kAudioChannelLabel_RightWide:
+      trackStr = "RightWide";
+      break;
+    case kAudioChannelLabel_LFE2:
+      trackStr = "LFE2";
+      break;
+    case kAudioChannelLabel_LeftTotal:
+      trackStr = "LeftTotal";
+      break;
+    case kAudioChannelLabel_RightTotal:
+      trackStr = "RightTotal";
+      break;
+    case kAudioChannelLabel_HearingImpaired:
+      trackStr = "HearingImpaired";
+      break;
+    case kAudioChannelLabel_Narration:
+      trackStr = "Narration";
+      break;
+    case kAudioChannelLabel_Mono:
+      trackStr = "Mono";
+      break;
+    case kAudioChannelLabel_DialogCentricMix:
+      trackStr = "DialogCentricMix";
+      break;
+    case kAudioChannelLabel_CenterSurroundDirect:
+      trackStr = "CenterSurroundDirect";
       break;
 
     default:
@@ -474,13 +528,18 @@ static VALUE track_get_audio_channel_map(VALUE obj)
       switch (layoutTag) {
 
         case kAudioChannelLayoutTag_Mono:
-          ADD_CHANNEL(channels, channel, "mono");
+          ADD_CHANNEL(channels, channel, "Mono");
           break;
         
         case kAudioChannelLayoutTag_Stereo:
-          ADD_CHANNEL(channels, channel, "left");
-          ADD_CHANNEL(channels, channel, "right");
+          ADD_CHANNEL(channels, channel, "Left");
+          ADD_CHANNEL(channels, channel, "Right");
           break;
+          
+        case kAudioChannelLayoutTag_MatrixStereo :
+          ADD_CHANNEL(channels, channel, "LeftTotal");
+          ADD_CHANNEL(channels, channel, "RightTotal");
+          
 
         default:
           // unsupported
