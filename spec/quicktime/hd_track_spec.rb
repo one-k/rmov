@@ -49,37 +49,58 @@ describe QuickTime::Track do
 
   end  
 
-  describe "SD3v2.mov audio tracks" do
+  describe "SD3v2.mov" do
     before(:each) do
       @movie = QuickTime::Movie.open(File.dirname(__FILE__) + '/../fixtures/SD3v2.mov')
     end
     
-    it "has audio track 0 with left/right" do
-      track = @movie.audio_tracks[0]
-      track.channel_map.should_not == nil
-      track.channel_map[0][:assignment].should == :Left
-      track.channel_map[1][:assignment].should == :Right
-    end
-
-    it "has audio track 1 with left/right" do
-      track = @movie.audio_tracks[1]
-      track.channel_map.should_not == nil
-      track.channel_map[0][:assignment].should == :Left
+#    it "has normal size of 720x480" do
+#      @movie.normal_size.should == [720, 480]
+#    end
+    
+    it "has video track size of 720x480" do
+      track = @movie.video_tracks.first
+      track.height.should == 480
+      track.width.should == 720
     end
     
-    it "has audio tracks with proper assignments" do
-      channel_maps = @movie.audio_tracks.collect {|tr| tr.channel_map}
-      channel_maps.should == [
-        [{:assignment => :Left}, {:assignment => :Right}],
-        [{:assignment => :Left}],
-        [{:assignment => :Right}],
-        [{:assignment => :Center}],
-        [{:assignment => :LFEScreen}],
-        [{:assignment => :LeftSurround}],
-        [{:assignment => :RightSurround}],
-        ]
+    it "has video track encoded pixel size of 720x480" do
+      track = @movie.video_tracks.first
+      track.encoded_pixel_dimensions.should == {:width => 720, :height => 480}
     end
 
+
+
+    
+    
+    
+    describe "audio tracks" do
+      it "has audio track 0 with left/right" do
+        track = @movie.audio_tracks[0]
+        track.channel_map.should_not == nil
+        track.channel_map[0][:assignment].should == :Left
+        track.channel_map[1][:assignment].should == :Right
+      end
+
+      it "has audio track 1 with left/right" do
+        track = @movie.audio_tracks[1]
+        track.channel_map.should_not == nil
+        track.channel_map[0][:assignment].should == :Left
+      end
+    
+      it "has audio tracks with proper assignments" do
+        channel_maps = @movie.audio_tracks.collect {|tr| tr.channel_map}
+        channel_maps.should == [
+          [{:assignment => :Left}, {:assignment => :Right}],
+          [{:assignment => :Left}],
+          [{:assignment => :Right}],
+          [{:assignment => :Center}],
+          [{:assignment => :LFEScreen}],
+          [{:assignment => :LeftSurround}],
+          [{:assignment => :RightSurround}],
+          ]
+      end
+    end
   end
   
   

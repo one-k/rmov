@@ -487,6 +487,10 @@ static char* track_str_for_AudioChannelLabel(label) {
   return trackStr;
 }
 
+/*
+call-seq: track_get_audio_channel_map() -> array of hashes with audio channel descriptions
+  * currently returns the channel assignment
+*/
 static VALUE track_get_audio_channel_map(VALUE obj)
 {
   AudioChannelLayout *layout = track_get_audio_channel_layout(obj);
@@ -556,6 +560,39 @@ static VALUE track_get_audio_channel_map(VALUE obj)
   return channels;
 }
 
+/*
+  call-seq: track_encoded_pixel_dimensions() -> {:width => width, :height => height}
+
+  returns hash of dimensions {:width => width, :height => height} of the encoded pixel
+  dimensions
+*/
+static VALUE track_encoded_pixel_dimensions(VALUE obj)
+{
+  OSErr osErr = noErr;
+  ImageDescriptionHandle image_description = track_image_description(obj);
+  if (image_description == NULL) goto bail;
+  
+  SInt32 width, height;
+  osErr = ICMImageDescriptionGetProperty(image_description, kQTPropertyClass_ImageDescription, kICMImageDescriptionPropertyID_EncodedWidth, sizeof(width), &width, NULL);
+  if (osErr != noErr) goto bail;
+
+  osErr = ICMImageDescriptionGetProperty(image_description, kQTPropertyClass_ImageDescription, kICMImageDescriptionPropertyID_EncodedHeight, sizeof(height), &height, NULL);
+  if (osErr != noErr) goto bail;
+
+  VALUE size_hash = rb_hash_new();
+
+  rb_hash_aset(size_hash, ID2SYM(rb_intern("width")), INT2NUM(width));
+  rb_hash_aset(size_hash, ID2SYM(rb_intern("height")), INT2NUM(height));
+
+  DisposeHandle((Handle)image_description);
+  return size_hash;
+
+  bail:
+    DisposeHandle((Handle)image_description);
+    rb_raise(eQuickTime, "Error %d when getting track_encoded_pixel_dimensions", osErr);
+    return Qnil;
+}
+
 void Init_quicktime_track()
 {
   VALUE mQuickTime;
@@ -571,9 +608,11 @@ void Init_quicktime_track()
   rb_define_method(cTrack, "codec", track_codec, 0);
   rb_define_method(cTrack, "width", track_width, 0);
   rb_define_method(cTrack, "height", track_height, 0);
+  rb_define_method(cTrack, "encoded_pixel_dimensions", track_encoded_pixel_dimensions, 0);
+  
   rb_define_method(cTrack, "channel_count", track_get_audio_channel_count, 0);
   rb_define_method(cTrack, "channel_map", track_get_audio_channel_map, 0);
-  
+
   rb_define_method(cTrack, "id", track_id, 0);
   rb_define_method(cTrack, "delete", track_delete, 0);
   rb_define_method(cTrack, "enabled?", track_enabled, 0);
