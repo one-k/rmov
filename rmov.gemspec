@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
   s.extra_rdoc_files = ["CHANGELOG", "ext/exporter.c", "ext/extconf.rb", "ext/movie.c", "ext/rmov_ext.c", "ext/rmov_ext.h", "ext/track.c", "lib/quicktime/exporter.rb", "lib/quicktime/movie.rb", "lib/quicktime/track.rb", "lib/rmov.rb", "LICENSE", "README.rdoc", "tasks/setup.rake", "tasks/spec.rake", "TODO"]
   s.files = ["CHANGELOG", "ext/exporter.c", "ext/extconf.rb", "ext/movie.c", "ext/rmov_ext.c", "ext/rmov_ext.h", "ext/track.c", "lib/quicktime/exporter.rb", "lib/quicktime/movie.rb", "lib/quicktime/track.rb", "lib/rmov.rb", "LICENSE", "Manifest", "Rakefile", "README.rdoc", "spec/fixtures/settings.st", "spec/quicktime/exporter_spec.rb", "spec/quicktime/movie_spec.rb", "spec/quicktime/track_spec.rb", "spec/quicktime/hd_track_spec.rb", "spec/spec.opts", "spec/spec_helper.rb", "tasks/setup.rake", "tasks/spec.rake", "TODO", "rmov.gemspec"]
   s.has_rdoc = true
-  s.homepage = %q{http://github.com/ryanb/rmov}
+  s.homepage = %q{http://github.com/one-k/rmov}
   s.rdoc_options = ["--line-numbers", "--inline-source", "--title", "Rmov", "--main", "README.rdoc"]
   s.require_paths = ["lib", "ext"]
   s.rubyforge_project = %q{rmov}

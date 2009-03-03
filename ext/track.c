@@ -484,8 +484,11 @@ static char* track_str_for_AudioChannelLabel(label) {
 }
 
 /*
-call-seq: track_get_audio_channel_map() -> array of hashes with audio channel descriptions
-  * currently returns the channel assignment
+  call-seq: track_get_audio_channel_map() -> array
+    
+    Returns an array n-channels in length
+    Array contains Hashes in the form: {:assignment => :description} where :description is a symbol representing an audio channel description.  eg. :Left, :Right, :Mono
+  
 */
 static VALUE track_get_audio_channel_map(VALUE obj)
 {
