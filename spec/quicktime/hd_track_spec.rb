@@ -10,11 +10,15 @@ describe QuickTime::Track do
       before(:each) do
         @track = @movie.video_tracks.first
       end
-      
+
       it "should have a codec of Apple ProRes 422 (HQ)" do
         @track.codec.should == "Apple ProRes 422 (HQ)"
       end
-            
+
+      it "has video track aspect ratio of 1:1" do
+        @track.pixel_aspect_ratio.should == [1, 1]
+      end
+
     end
   
     describe "HD2.mov audio track" do 
@@ -54,26 +58,25 @@ describe QuickTime::Track do
       @movie = QuickTime::Movie.open(File.dirname(__FILE__) + '/../fixtures/SD3v2.mov')
     end
     
-#    it "has normal size of 720x480" do
-#      @movie.normal_size.should == [720, 480]
-#    end
+    describe "video track" do
+      before(:each) do
+        @track = @movie.video_tracks.first
+      end
+
+      it "has size of 720x480" do
+        @track.width.should == 720
+        @track.height.should == 480
+      end
     
-    it "has video track size of 720x480" do
-      track = @movie.video_tracks.first
-      track.height.should == 480
-      track.width.should == 720
+      it "has encoded pixel size of 720x480" do
+        @track.encoded_pixel_dimensions.should == {:width => 720, :height => 480}
+      end
+    
+      it "has aspect ratio of 1:0.84375" do
+        @track.pixel_aspect_ratio.should == [100000, 84375]
+      end
     end
-    
-    it "has video track encoded pixel size of 720x480" do
-      track = @movie.video_tracks.first
-      track.encoded_pixel_dimensions.should == {:width => 720, :height => 480}
-    end
 
-
-
-    
-    
-    
     describe "audio tracks" do
       it "has audio track 0 with left/right" do
         track = @movie.audio_tracks[0]
@@ -120,7 +123,39 @@ describe QuickTime::Track do
         [{:assignment => :Mono}],
         [{:assignment => :Mono}],
         ]
-    end 
+    end
+    
+    it "has video track aspect ratio of 1:1" do
+      track = @movie.video_tracks.first
+      track.pixel_aspect_ratio.should == [1, 1]
+    end
   end
+
+
+  describe "SD2v2.mov audio tracks" do
+    before(:each) do
+      @movie = QuickTime::Movie.open(File.dirname(__FILE__) + '/../fixtures/SD2v2.mov')
+    end
+    
+    it "has video track aspect ratio of 100000:112500" do
+      track = @movie.video_tracks.first
+      track.pixel_aspect_ratio.should == [100000, 112500]
+    end
+
+  end
+
+  describe "exampleUnsupportAudio.mov audio tracks" do
+    before(:each) do
+      @movie = QuickTime::Movie.open(File.dirname(__FILE__) + '/../fixtures/exampleUnsupportAudio.mov')
+    end
+    
+    it "has audio tracks with proper assignments" do
+      channel_maps = @movie.audio_tracks.collect {|tr| tr.channel_map}
+      channel_maps.should == [
+        [{:assignment => :UnsupportedByRMov, :message => "ChannelLabel unsupported by rmov: 65537"}]
+        ]
+    end
+  end
+
 
 end

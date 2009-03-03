@@ -1,3 +1,11 @@
+0.2.5 (March 3, 2009)
+
+* adds pixel aspect ratio
+* adds encoded pixel dimensions
+* fixes issue with unsupported audio channel labels
+* adds return value for audio channels of :UnsupportedByRMov for unsupported values
+* adds :message for those unsupported cases
+
 0.2.4 (February 27, 2009)
 
 * changes symbols case to match QuickTime constants for channel descriptions (eg. :left becomes :Left)

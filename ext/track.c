@@ -478,10 +478,6 @@ static char* track_str_for_AudioChannelLabel(label) {
     case kAudioChannelLabel_CenterSurroundDirect:
       trackStr = "CenterSurroundDirect";
       break;
-
-    default:
-      rb_raise(eQuickTime, "Not Implemented: AudioChannelLabel in track_get_audio_channel_map : %d", label);
-      break;
   }
   
   return trackStr;
@@ -497,8 +493,9 @@ static VALUE track_get_audio_channel_map(VALUE obj)
   if (layout == NULL) return Qnil;
   
   VALUE channels = Qnil;
-  UInt32 numChannels, x;
+  UInt32 numChannels, x, highLayoutTag;
   VALUE channel;
+  char message[256];
   AudioChannelLayoutTag layoutTag = layout->mChannelLayoutTag;
   
   if (layoutTag == kAudioChannelLayoutTag_UseChannelDescriptions) {
@@ -513,7 +510,16 @@ static VALUE track_get_audio_channel_map(VALUE obj)
     for (x=0; x < numChannels; x++) {
       desc = layout->mChannelDescriptions[x];
       trackStr = track_str_for_AudioChannelLabel(desc.mChannelLabel);
-      ADD_CHANNEL(channels, channel, trackStr);
+
+      if (trackStr != NULL) {
+        ADD_CHANNEL(channels, channel, trackStr);
+
+      } else {
+         // unsupported audio channel labels
+         ADD_CHANNEL(channels, channel, "UnsupportedByRMov");
+         sprintf(message, "ChannelLabel unsupported by rmov: %d", desc.mChannelLabel);
+         rb_hash_aset(channel, ID2SYM(rb_intern("message")), rb_str_new2(message));
+      }
     }
     
 
@@ -524,7 +530,12 @@ static VALUE track_get_audio_channel_map(VALUE obj)
     if (layoutTag == kAudioChannelLayoutTag_UseChannelBitmap) {
       // use the bitmap approach
       // not implemented
-      rb_raise(eQuickTime, "Not Implemented: kAudioChannelLayoutTag_UseChannelBitmap in track_get_audio_channel_map");
+      //rb_raise(eQuickTime, "Not Implemented: kAudioChannelLayoutTag_UseChannelBitmap in track_get_audio_channel_map");
+      for (x=0; x < numChannels; x++) {
+        ADD_CHANNEL(channels, channel, "UnsupportedByRMov");
+        rb_hash_aset(channel, ID2SYM(rb_intern("message")), rb_str_new2("UseChannelBitmap unsupported by rmov"));
+      }
+
 
 
     } else {
@@ -543,11 +554,17 @@ static VALUE track_get_audio_channel_map(VALUE obj)
         case kAudioChannelLayoutTag_MatrixStereo :
           ADD_CHANNEL(channels, channel, "LeftTotal");
           ADD_CHANNEL(channels, channel, "RightTotal");
-          
+          break;
 
         default:
-          // unsupported
-          rb_raise(eQuickTime, "Unsupported ChannelLayoutTag in track_get_audio_channel_map: %d", layoutTag);
+          // unsupported channels
+          highLayoutTag = (layoutTag & 0xff0000) >> 16;
+          sprintf(message, "layoutTag unsupported by rmov: (%dL << 16) | %d", highLayoutTag, numChannels);
+          for (x=0; x < numChannels; x++) {
+            ADD_CHANNEL(channels, channel, "UnsupportedByRMov");
+            rb_hash_aset(channel, ID2SYM(rb_intern("message")), rb_str_new2(message));
+          }
+          //rb_raise(eQuickTime, "Unsupported ChannelLayoutTag in track_get_audio_channel_map: %d", layoutTag);
           break;
       }
 
@@ -593,6 +610,31 @@ static VALUE track_encoded_pixel_dimensions(VALUE obj)
     return Qnil;
 }
 
+/*
+  call-seq: track_pixel_aspect_ratio() -> aspect_ratio array [1, 1]
+*/
+static VALUE track_pixel_aspect_ratio(VALUE obj)
+{
+  OSErr osErr = noErr;
+  ImageDescriptionHandle image_description = track_image_description(obj);
+  if (image_description == NULL) goto bail;
+  
+  PixelAspectRatioImageDescriptionExtension dimension;
+  osErr = ICMImageDescriptionGetProperty(image_description, kQTPropertyClass_ImageDescription, kICMImageDescriptionPropertyID_PixelAspectRatio, sizeof(dimension), &dimension, NULL);
+  if (osErr != noErr) goto bail;
+  
+//  printf("\naspect ratio: %d:%d\n", dimension.hSpacing, dimension.vSpacing);
+  VALUE aspect_ratio = rb_ary_new3(2, INT2NUM(dimension.hSpacing), INT2NUM(dimension.vSpacing));
+
+  DisposeHandle((Handle)image_description);
+  return aspect_ratio;
+
+  bail:
+    DisposeHandle((Handle)image_description);
+    rb_raise(eQuickTime, "Error %d when getting track_encoded_pixel_dimensions", osErr);
+    return Qnil;
+}
+
 void Init_quicktime_track()
 {
   VALUE mQuickTime;
@@ -609,6 +651,7 @@ void Init_quicktime_track()
   rb_define_method(cTrack, "width", track_width, 0);
   rb_define_method(cTrack, "height", track_height, 0);
   rb_define_method(cTrack, "encoded_pixel_dimensions", track_encoded_pixel_dimensions, 0);
+  rb_define_method(cTrack, "pixel_aspect_ratio", track_pixel_aspect_ratio, 0);
   
   rb_define_method(cTrack, "channel_count", track_get_audio_channel_count, 0);
   rb_define_method(cTrack, "channel_map", track_get_audio_channel_map, 0);
