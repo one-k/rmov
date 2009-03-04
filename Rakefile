@@ -1,7 +1,7 @@
 require 'rubygems'
 require 'rake'
 require 'echoe'
-
+ 
 Echoe.new('rmov', '0.2.5') do |p|
   p.summary        = "Ruby wrapper for the QuickTime C API."
   p.description    = "Ruby wrapper for the QuickTime C API.  Updates by 1K include exposing some movie properties such as codec and audio channel descriptions"
