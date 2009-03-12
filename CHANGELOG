@@ -1,3 +1,9 @@
+0.2.7 (March 12, 2009)
+* adds aspect_ratio to Track
+
+0.2.6 (March 12, 2009)
+* adds display pixel dimensions
+
 0.2.5 (March 3, 2009)
 
 * adds pixel aspect ratio

@@ -79,6 +79,11 @@ describe QuickTime::Track do
       it "has aspect ratio of 1:0.84375" do
         @track.pixel_aspect_ratio.should == [100000, 84375]
       end
+      
+      it "has aspect ratio" do
+        @track.aspect_ratio.should == :widescreen
+      end
+      
     end
 
     describe "audio tracks" do
@@ -133,17 +138,41 @@ describe QuickTime::Track do
       track = @movie.video_tracks.first
       track.pixel_aspect_ratio.should == [1, 1]
     end
+    
+    it "has aspect ratio" do
+      track = @movie.video_tracks.first
+      track.aspect_ratio.should == :other
+    end
+    
   end
 
 
-  describe "SD2v2.mov audio tracks" do
+  describe "SD2v2.mov" do
     before(:each) do
       @movie = QuickTime::Movie.open(File.dirname(__FILE__) + '/../fixtures/SD2v2.mov')
     end
     
-    it "has video track aspect ratio of 100000:112500" do
-      track = @movie.video_tracks.first
-      track.pixel_aspect_ratio.should == [100000, 112500]
+    describe "video track" do
+      before(:each) do
+        @track = @movie.video_tracks.first
+      end
+
+      it "has video track aspect ratio of 100000:112500" do
+        @track.pixel_aspect_ratio.should == [100000, 112500]
+      end
+
+      it "has encoded pixel size" do
+        @track.encoded_pixel_dimensions.should == {:width => 720, :height => 480}
+      end
+
+      it "has display pixel size" do
+        @track.display_pixel_dimensions.should == {:width => 640, :height => 480}
+      end
+      
+      it "has aspect ratio" do
+        @track.aspect_ratio.should == :fullframe
+      end
+
     end
 
   end

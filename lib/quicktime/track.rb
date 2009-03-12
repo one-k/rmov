@@ -27,5 +27,15 @@ module QuickTime
       media_type == :text
     end
     
+    # returns numerical value for aspect ratio.  eg. 1.33333 is 4x3
+    def aspect_ratio
+      pix_num, pix_den = pixel_aspect_ratio
+      encoded_size = encoded_pixel_dimensions
+      aspect = (encoded_size[:width].to_f / encoded_size[:height].to_f) * (pix_num.to_f / pix_den.to_f)
+      return :widescreen if aspect == (16.0/9.0)
+      return :fullframe if aspect == (4.0/3.0)
+      :other
+    end
+        
   end
 end
