@@ -72,10 +72,10 @@ describe QuickTime::Track do
         @track.encoded_pixel_dimensions.should == {:width => 720, :height => 480}
       end
     
-      it "has display pixel size of 720x480" do
+      it "has display pixel size of 853x480" do
         @track.display_pixel_dimensions.should == {:width => 853, :height => 480}
       end
-    
+
       it "has aspect ratio of 1:0.84375" do
         @track.pixel_aspect_ratio.should == [100000, 84375]
       end
