@@ -1,3 +1,6 @@
+0.2.8 (April 23, 2009)
+* Adds support for kAudioChannelLayoutTag_SMPTE_DTV audio layoutTag / ordering
+
 0.2.7 (March 12, 2009)
 * adds aspect_ratio to Track
 

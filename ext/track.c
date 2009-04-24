@@ -554,7 +554,18 @@ static VALUE track_get_audio_channel_map(VALUE obj)
           ADD_CHANNEL(channels, channel, "Right");
           break;
           
-        case kAudioChannelLayoutTag_MatrixStereo :
+        case kAudioChannelLayoutTag_MatrixStereo:
+          ADD_CHANNEL(channels, channel, "LeftTotal");
+          ADD_CHANNEL(channels, channel, "RightTotal");
+          break;
+          
+        case kAudioChannelLayoutTag_SMPTE_DTV:
+          ADD_CHANNEL(channels, channel, "Left");
+          ADD_CHANNEL(channels, channel, "Right");
+          ADD_CHANNEL(channels, channel, "Center");
+          ADD_CHANNEL(channels, channel, "LFEScreen");
+          ADD_CHANNEL(channels, channel, "LeftSurround");
+          ADD_CHANNEL(channels, channel, "RightSurround");
           ADD_CHANNEL(channels, channel, "LeftTotal");
           ADD_CHANNEL(channels, channel, "RightTotal");
           break;

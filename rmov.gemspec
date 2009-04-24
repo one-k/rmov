@@ -2,11 +2,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{rmov}
-  s.version = "0.2.7"
+  s.version = "0.2.8"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 1.2") if s.respond_to? :required_rubygems_version=
   s.authors = ["Ryan Bates, with updates by 1K Studios, LLC"]
-  s.date = %q{2009-03-12}
+  s.date = %q{2009-04-23}
   s.description = %q{Ruby wrapper for the QuickTime C API.  Updates by 1K include exposing some movie properties such as codec and audio channel descriptions}
   s.email = %q{ryan (at) railscasts (dot) com}
   s.extensions = ["ext/extconf.rb"]
@@ -17,12 +17,12 @@ Gem::Specification.new do |s|
   s.rdoc_options = ["--line-numbers", "--inline-source", "--title", "Rmov", "--main", "README.rdoc"]
   s.require_paths = ["lib", "ext"]
   s.rubyforge_project = %q{rmov}
-  s.rubygems_version = %q{1.3.1}
+  s.rubygems_version = %q{1.3.2}
   s.summary = %q{Ruby wrapper for the QuickTime C API.}
 
   if s.respond_to? :specification_version then
     current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
-    s.specification_version = 2
+    s.specification_version = 3
 
     if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
     else
