@@ -36,6 +36,17 @@ module QuickTime
       return :fullframe if aspect == (4.0/3.0)
       :other
     end
+
+    # Returns the bounding width of this track in number of pixels.
+    def bounds_width
+      bounds[:right] - bounds[:left]
+    end
+    
+    # Returns the bounding height of this track in number of pixels.
+    def bounds_height
+      bounds[:bottom] - bounds[:top]
+    end
+
         
   end
 end

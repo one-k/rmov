@@ -64,27 +64,29 @@ static VALUE movie_load_from_file(VALUE obj, VALUE filepath)
   } else {
     OSErr err;
     FSSpec fs;
-    short frefnum = -1;
-    short movie_resid = 0;
+    short resRefNum = -1;
+    short resId = 0;
     Movie *movie = ALLOC(Movie);
     
     err = NativePathNameToFSSpec(RSTRING(filepath)->ptr, &fs, 0);
     if (err != 0)
       rb_raise(eQuickTime, "Error %d occurred while reading file at %s", err, RSTRING(filepath)->ptr);
     
-    err = OpenMovieFile(&fs, &frefnum, fsRdPerm);
+    err = OpenMovieFile(&fs, &resRefNum, fsRdPerm);
     if (err != 0)
       rb_raise(eQuickTime, "Error %d occurred while opening movie at %s", err, RSTRING(filepath)->ptr);
     
-    err = NewMovieFromFile(movie, frefnum, &movie_resid, 0, newMovieActive, 0);
+    err = NewMovieFromFile(movie, resRefNum, &resId, 0, newMovieActive, 0);
     if (err != 0)
       rb_raise(eQuickTime, "Error %d occurred while loading movie at %s", err, RSTRING(filepath)->ptr);
     
-    err = CloseMovieFile(frefnum);
+    err = CloseMovieFile(resRefNum);
     if (err != 0)
       rb_raise(eQuickTime, "Error %d occurred while closing movie file at %s", err, RSTRING(filepath)->ptr);
     
     RMOVIE(obj)->movie = *movie;
+    RMOVIE(obj)->filepath = RSTRING(filepath)->ptr;
+    RMOVIE(obj)->resId = resId;
     
     return obj;
   }
@@ -158,20 +160,31 @@ static VALUE movie_track_count(VALUE obj)
 }
 
 /*
-  call-seq: composite_movie(movie, position)
+  call-seq: select(position, duration)
   
-  Adds the tracks of given movie into called movie at given position (in seconds).
+  Select a portion of a movie. Both position and duration should be
+  floats representing seconds.
+*/
+static VALUE movie_select(VALUE obj, VALUE position, VALUE duration)
+{
+  SetMovieSelection(MOVIE(obj), MOVIE_TIME(obj, position), MOVIE_TIME(obj, duration));
+  return obj;
+}
+
+/*
+  call-seq: add_into_selection(movie)
+  
+  Adds the tracks of given movie into called movie's current selection.
   
   You can track the progress of this operation by passing a block to this 
   method. It will be called regularly during the process and pass the 
   percentage complete (0.0 to 1.0) as an argument to the block.
 */
-static VALUE movie_composite_movie(VALUE obj, VALUE src, VALUE position)
+static VALUE movie_add_into_selection(VALUE obj, VALUE src)
 {
   if (rb_block_given_p())
     SetMovieProgressProc(MOVIE(obj), (MovieProgressUPP)movie_progress_proc, rb_block_proc());
   
-  SetMovieSelection(MOVIE(obj), MOVIE_TIME(obj, position), 0);
   AddMovieSelection(MOVIE(obj), MOVIE(src));
   
   if (rb_block_given_p())
@@ -181,20 +194,19 @@ static VALUE movie_composite_movie(VALUE obj, VALUE src, VALUE position)
 }
 
 /*
-  call-seq: append_movie(movie, position)
+  call-seq: insert_into_selection(movie)
   
-  Inserts given movie into called movie at given position (in seconds).
-
+  Inserts the given movie into called movie, replacing any current selection.
+  
   You can track the progress of this operation by passing a block to this 
   method. It will be called regularly during the process and pass the 
   percentage complete (0.0 to 1.0) as an argument to the block.
 */
-static VALUE movie_insert_movie(VALUE obj, VALUE src, VALUE position)
+static VALUE movie_insert_into_selection(VALUE obj, VALUE src)
 {
   if (rb_block_given_p())
     SetMovieProgressProc(MOVIE(obj), (MovieProgressUPP)movie_progress_proc, rb_block_proc());
   
-  SetMovieSelection(MOVIE(obj), MOVIE_TIME(obj, position), 0);
   PasteMovieSelection(MOVIE(obj), MOVIE(src));
   
   if (rb_block_given_p())
@@ -204,60 +216,22 @@ static VALUE movie_insert_movie(VALUE obj, VALUE src, VALUE position)
 }
 
 /*
-  call-seq: append_movie(movie)
+  call-seq: clone_selection()
   
-  Adds given movie to the end of movie which this method is called on.
-
+  Returns a new movie from the current selection. Does not modify original 
+  movie. 
+  
   You can track the progress of this operation by passing a block to this 
   method. It will be called regularly during the process and pass the 
   percentage complete (0.0 to 1.0) as an argument to the block.
 */
-static VALUE movie_append_movie(VALUE obj, VALUE src)
-{
-  if (rb_block_given_p())
-    SetMovieProgressProc(MOVIE(obj), (MovieProgressUPP)movie_progress_proc, rb_block_proc());
-  
-  SetMovieSelection(MOVIE(obj), GetMovieDuration(MOVIE(obj)), 0);
-  PasteMovieSelection(MOVIE(obj), MOVIE(src));
-  
-  if (rb_block_given_p())
-    SetMovieProgressProc(MOVIE(obj), 0, 0);
-  
-  return obj;
-}
-
-/*
-  call-seq: delete_section(start_time, duration)
-  
-  Deletes given section from movie. Both start_time and duration 
-  should be floats representing seconds.
-*/
-static VALUE movie_delete_section(VALUE obj, VALUE start, VALUE duration)
-{
-  SetMovieSelection(MOVIE(obj), MOVIE_TIME(obj, start), MOVIE_TIME(obj, duration));
-  ClearMovieSelection(MOVIE(obj));
-  return obj;
-}
-
-/*
-  call-seq: clone_section(start_time, duration) -> movie
-  
-  Returns a new movie in the given section. Does not modify original 
-  movie. Both start_time and duration should be floats representing 
-  seconds.
-
-  You can track the progress of this operation by passing a block to this 
-  method. It will be called regularly during the process and pass the 
-  percentage complete (0.0 to 1.0) as an argument to the block.
-*/
-static VALUE movie_clone_section(VALUE obj, VALUE start, VALUE duration)
+static VALUE movie_clone_selection(VALUE obj)
 {
   VALUE new_movie_obj = rb_obj_alloc(cMovie);
   
   if (rb_block_given_p())
     SetMovieProgressProc(MOVIE(obj), (MovieProgressUPP)movie_progress_proc, rb_block_proc());
   
-  SetMovieSelection(MOVIE(obj), MOVIE_TIME(obj, start), MOVIE_TIME(obj, duration));
   RMOVIE(new_movie_obj)->movie = CopyMovieSelection(MOVIE(obj));
   
   if (rb_block_given_p())
@@ -267,30 +241,39 @@ static VALUE movie_clone_section(VALUE obj, VALUE start, VALUE duration)
 }
 
 /*
-  call-seq: clip_section(start_time, duration) -> movie
+  call-seq: clip_selection()
   
-  Deletes given section on movie and returns a new movie with that 
-  section. Both start_time and duration should be floats representing 
-  seconds.
-
+  Deletes current selection on movie and returns a new movie with that 
+  content.
+  
   You can track the progress of this operation by passing a block to this 
   method. It will be called regularly during the process and pass the 
   percentage complete (0.0 to 1.0) as an argument to the block.
 */
-static VALUE movie_clip_section(VALUE obj, VALUE start, VALUE duration)
+static VALUE movie_clip_selection(VALUE obj)
 {
   VALUE new_movie_obj = rb_obj_alloc(cMovie);
   
   if (rb_block_given_p())
     SetMovieProgressProc(MOVIE(obj), (MovieProgressUPP)movie_progress_proc, rb_block_proc());
   
-  SetMovieSelection(MOVIE(obj), MOVIE_TIME(obj, start), MOVIE_TIME(obj, duration));
   RMOVIE(new_movie_obj)->movie = CutMovieSelection(MOVIE(obj));
   
   if (rb_block_given_p())
     SetMovieProgressProc(MOVIE(obj), 0, 0);
   
   return new_movie_obj;
+}
+
+/*
+  call-seq: delete_selection()
+  
+  Removes the portion of the movie which is selected.
+*/
+static VALUE movie_delete_selection(VALUE obj)
+{
+  ClearMovieSelection(MOVIE(obj));
+  return obj;
 }
 
 /*
@@ -343,6 +326,41 @@ static VALUE movie_flatten(VALUE obj, VALUE filepath)
                                   | flattenForceMovieResourceBeforeMovieData,
                                   &fs, 'TVOD', smSystemScript, createMovieFileDontCreateResFile);
   return new_movie_obj;
+}
+
+
+/*
+  call-seq: save()
+  
+  Saves the movie to the current file.
+*/
+static VALUE movie_save(VALUE obj)
+{
+  OSErr err;
+  FSSpec fs;
+  short resRefNum = -1;
+  
+  if (!RMOVIE(obj)->filepath || !RMOVIE(obj)->resId) {
+    rb_raise(eQuickTime, "Unable to save movie because it does not have an associated file.");
+  } else {
+    err = NativePathNameToFSSpec(RMOVIE(obj)->filepath, &fs, 0);
+    if (err != 0)
+      rb_raise(eQuickTime, "Error %d occurred while reading file at %s", err, RMOVIE(obj)->filepath);
+    
+    err = OpenMovieFile(&fs, &resRefNum, fsWrPerm);
+    if (err != 0)
+      rb_raise(eQuickTime, "Error %d occurred while opening movie at %s", err, RMOVIE(obj)->filepath);
+    
+    err = UpdateMovieResource(MOVIE(obj), resRefNum, RMOVIE(obj)->resId, 0);
+    if (err != 0)
+      rb_raise(eQuickTime, "Error %d occurred while saving movie file", err);
+    
+    err = CloseMovieFile(resRefNum);
+    if (err != 0)
+      rb_raise(eQuickTime, "Error %d occurred while closing movie file at %s", err, RMOVIE(obj)->filepath);
+    
+    return Qnil;
+  }
 }
 
 /*
@@ -440,12 +458,12 @@ void Init_quicktime_movie()
   rb_define_method(cMovie, "time_scale", movie_time_scale, 0);
   rb_define_method(cMovie, "bounds", movie_bounds, 0);
   rb_define_method(cMovie, "track_count", movie_track_count, 0);
-  rb_define_method(cMovie, "composite_movie", movie_composite_movie, 2);
-  rb_define_method(cMovie, "insert_movie", movie_insert_movie, 2);
-  rb_define_method(cMovie, "append_movie", movie_append_movie, 1);
-  rb_define_method(cMovie, "delete_section", movie_delete_section, 2);
-  rb_define_method(cMovie, "clone_section", movie_clone_section, 2);
-  rb_define_method(cMovie, "clip_section", movie_clip_section, 2);
+  rb_define_method(cMovie, "select", movie_select, 2);
+  rb_define_method(cMovie, "add_into_selection", movie_add_into_selection, 1);
+  rb_define_method(cMovie, "insert_into_selection", movie_insert_into_selection, 1);
+  rb_define_method(cMovie, "clone_selection", movie_clone_selection, 0);
+  rb_define_method(cMovie, "clip_selection", movie_clip_selection, 0);
+  rb_define_method(cMovie, "delete_selection", movie_delete_selection, 0);
   rb_define_method(cMovie, "changed?", movie_changed, 0);
   rb_define_method(cMovie, "clear_changed_status", movie_clear_changed_status, 0);
   rb_define_method(cMovie, "flatten", movie_flatten, 1);
@@ -453,5 +471,6 @@ void Init_quicktime_movie()
   rb_define_method(cMovie, "dispose", movie_dispose, 0);
   rb_define_method(cMovie, "poster_time", movie_get_poster_time, 0);
   rb_define_method(cMovie, "poster_time=", movie_set_poster_time, 1);
-  rb_define_method(cMovie, "new_track", movie_new_track, 2);  
+  rb_define_method(cMovie, "new_track", movie_new_track, 2);
+  rb_define_method(cMovie, "save", movie_save, 0);
 }

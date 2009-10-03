@@ -111,10 +111,26 @@ describe QuickTime::Movie do
     
     it "flatten should save movie into file" do
       path = File.dirname(__FILE__) + '/../output/flattened_example.mov'
-      File.delete(path) rescue nil
+      File.delete(path) if File.exist?(path)
       @movie.flatten(path)
       mov = QuickTime::Movie.open(path)
       mov.duration.should == 3.1
+    end
+    
+    it "save should update movie in current file" do
+      path = File.dirname(__FILE__) + '/../output/saved_example.mov'
+      File.delete(path) if File.exist?(path)
+      @movie.flatten(path)
+      mov = QuickTime::Movie.open(path)
+      mov.audio_tracks.each { |t| t.delete } # delete track to demonstrate change
+      mov.save
+      mov2 = QuickTime::Movie.open(path)
+      mov2.audio_tracks.should be_empty
+    end
+    
+    it "save should raise exception when saving new movie without filepath" do
+      mov = QuickTime::Movie.empty
+      lambda { mov.save }.should raise_error
     end
     
     it "export_pict should output a pict file at a given duration" do
@@ -136,6 +152,15 @@ describe QuickTime::Movie do
     it "should be able to set poster time  to 2.1 seconds in" do
       @movie.poster_time = 2.1
       @movie.poster_time.should == 2.1
+    end
+    
+    it "should overlay 2nd movie with transparency" do
+      m2 = QuickTime::Movie.open(File.dirname(__FILE__) + '/../fixtures/dot.png')
+      @movie.composite_movie(m2, 0)
+      @movie.video_tracks.last.enable_alpha
+      File.delete(File.dirname(__FILE__) + '/../output/transparent.mov') rescue nil
+      @movie.flatten(File.dirname(__FILE__) + '/../output/transparent.mov')
+      # this test needs to be checked manually by looking at the output movie
     end
   end
   

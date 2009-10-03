@@ -6,7 +6,7 @@ describe QuickTime::Track do
       @movie = QuickTime::Movie.open(File.dirname(__FILE__) + '/../fixtures/example.mov')
     end
   
-    describe "example.mov video track" do
+    describe "video track" do
       before(:each) do
         @track = @movie.video_tracks.first
       end
@@ -66,9 +66,37 @@ describe QuickTime::Track do
         @track.offset = 2.5
         @track.offset.should == 2.5
       end
+    
+      it "should be able to scale size of track" do
+        @track.scale(0.5, 0.5)
+        @track.bounds_width.should == 30
+        @track.bounds_height.should == 25
+      end
+    
+      it "should be able to move (translate) position of track" do
+        @track.translate(10, 20)
+        @track.bounds[:left].should == 10
+        @track.bounds[:top].should == 20
+      end
+    
+      it "should reset transformations" do
+        @track.scale(0.5, 0.5)
+        @track.translate(10, 20)
+        @track.reset_transformations
+        @track.bounds[:left].should == 0
+        @track.bounds[:top].should == 0
+        @track.bounds[:right].should == 60
+        @track.bounds[:bottom].should == 50
+      end
+    
+      it "should rotate track" do
+        @track.rotate(90)
+        @track.bounds_width.should == 50
+        @track.bounds_height.should == 60
+      end
     end
-  
-    describe "example.mov audio track" do
+    
+    describe "audio track" do
       before(:each) do
         @track = @movie.audio_tracks.first
       end

@@ -85,8 +85,9 @@ static OSType track_get_media_type(VALUE obj)
 */
 static VALUE track_media_type(VALUE obj)
 {
-  OSType media_type = track_get_media_type(obj);
+  OSType media_type;
   
+  GetMediaHandlerDescription(TRACK_MEDIA(obj), &media_type, 0, 0);
   if (media_type == SoundMediaType) {
     return ID2SYM(rb_intern("audio"));
   } else if (media_type == VideoMediaType) {
@@ -290,7 +291,7 @@ static VALUE track_set_offset(VALUE obj, VALUE seconds)
 }
 
 /*
-  call-seq: new_video_media
+  call-seq: new_video_media()
   
   Creates a new video media for this track.
   
@@ -304,7 +305,7 @@ static VALUE track_new_video_media(VALUE obj)
 }
 
 /*
-  call-seq: new_audio_media
+  call-seq: new_audio_media()
   
   Creates a new audio media for this track.
   
@@ -318,7 +319,7 @@ static VALUE track_new_audio_media(VALUE obj)
 }
 
 /*
-  call-seq: new_text_media
+  call-seq: new_text_media()
   
   Creates a new text media for this track.
   
@@ -328,6 +329,101 @@ static VALUE track_new_audio_media(VALUE obj)
 static VALUE track_new_text_media(VALUE obj)
 {
   NewTrackMedia(TRACK(obj), TextMediaType, 600, 0, 0);
+  return obj;
+}
+
+/*
+  call-seq: enable_alpha()
+  
+  Enable the straight alpha graphic mode for this track.
+  
+  This is best used on an overlayed video track which includes some
+  alpha transparency (such as in a PNG image).
+*/
+static VALUE track_enable_alpha(VALUE obj)
+{
+  MediaSetGraphicsMode(GetMediaHandler(TRACK_MEDIA(obj)), graphicsModeStraightAlpha, 0);
+  return obj;
+}
+
+/*
+  call-seq: scale(width, height)
+  
+  Scale the track's size by width and height respectively.
+  
+  The value passed is a relative float where "1" is the current size.
+*/
+static VALUE track_scale(VALUE obj, VALUE width, VALUE height)
+{
+  MatrixRecord matrix;
+  GetTrackMatrix(TRACK(obj), &matrix);
+  ScaleMatrix(&matrix, FloatToFixed(NUM2DBL(width)), FloatToFixed(NUM2DBL(height)), 0, 0);
+  SetTrackMatrix(TRACK(obj), &matrix);
+  return obj;
+}
+
+/*
+  call-seq: translate(x, y)
+  
+  Offset a track's position by x and y values respectively.
+  
+  Values should be in pixels.
+*/
+static VALUE track_translate(VALUE obj, VALUE x, VALUE y)
+{
+  MatrixRecord matrix;
+  GetTrackMatrix(TRACK(obj), &matrix);
+  TranslateMatrix(&matrix, FloatToFixed(NUM2DBL(x)), FloatToFixed(NUM2DBL(y)));
+  SetTrackMatrix(TRACK(obj), &matrix);
+  return obj;
+}
+
+/*
+  call-seq: rotate(degrees)
+  
+  Rotate the track by the given number of degrees.
+*/
+static VALUE track_rotate(VALUE obj, VALUE degrees)
+{
+  MatrixRecord matrix;
+  GetTrackMatrix(TRACK(obj), &matrix);
+  RotateMatrix(&matrix, FloatToFixed(NUM2DBL(degrees)), 0, 0);
+  SetTrackMatrix(TRACK(obj), &matrix);
+  return obj;
+}
+
+/*
+  call-seq: bounds() -> bounds_hash
+  
+  Returns a hash of boundaries. The hash contains four keys: :left, :top, 
+  :right, :bottom. Each holds an integer representing the pixel value.
+*/
+static VALUE track_bounds(VALUE obj)
+{
+  VALUE bounds_hash = rb_hash_new();
+  RgnHandle region;
+  Rect bounds;
+  region = GetTrackDisplayBoundsRgn(TRACK(obj));
+  GetRegionBounds(region, &bounds);
+  DisposeRgn(region);
+  rb_hash_aset(bounds_hash, ID2SYM(rb_intern("left")), INT2NUM(bounds.left));
+  rb_hash_aset(bounds_hash, ID2SYM(rb_intern("top")), INT2NUM(bounds.top));
+  rb_hash_aset(bounds_hash, ID2SYM(rb_intern("right")), INT2NUM(bounds.right));
+  rb_hash_aset(bounds_hash, ID2SYM(rb_intern("bottom")), INT2NUM(bounds.bottom));
+  return bounds_hash;
+}
+
+/*
+  call-seq: reset_transformations()
+  
+  Revert any transformations (scale, translate, rotate) performed on this track.
+*/
+static VALUE track_reset_transformations(VALUE obj)
+{
+  MatrixRecord matrix;
+  GetTrackMatrix(TRACK(obj), &matrix);
+  SetIdentityMatrix(&matrix);
+  SetTrackMatrix(TRACK(obj), &matrix);
   return obj;
 }
 
@@ -719,4 +815,10 @@ void Init_quicktime_track()
   rb_define_method(cTrack, "new_video_media", track_new_video_media, 0);
   rb_define_method(cTrack, "new_audio_media", track_new_audio_media, 0);
   rb_define_method(cTrack, "new_text_media", track_new_text_media, 0);
+  rb_define_method(cTrack, "enable_alpha", track_enable_alpha, 0);
+  rb_define_method(cTrack, "scale", track_scale, 2);
+  rb_define_method(cTrack, "translate", track_translate, 2);
+  rb_define_method(cTrack, "rotate", track_rotate, 1);
+  rb_define_method(cTrack, "bounds", track_bounds, 0);
+  rb_define_method(cTrack, "reset_transformations", track_reset_transformations, 0);
 }

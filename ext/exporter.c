@@ -93,7 +93,7 @@ static VALUE exporter_open_settings_dialog(VALUE obj)
   // Bring this process to the front
   err = TransformProcessType(&current_process, kProcessTransformToForegroundApplication);
   if (err != noErr) {
-    rb_raise(eQuickTime, "Error %d occurred while brining this application to the forground.", err);
+    rb_raise(eQuickTime, "Error %d occurred while bringing this application to the forground.", err);
   }
   SetFrontProcess(&current_process);
   
@@ -176,7 +176,7 @@ static VALUE exporter_save_settings(VALUE obj, VALUE filepath)
   if (!file) {
     rb_raise(eQuickTime, "Unable to open file for saving at %s.", RSTRING(filepath)->ptr);
   }
-  fwrite(&settings, GetHandleSize((Handle)settings), 1, file);
+  fwrite(*settings, GetHandleSize((Handle)settings), 1, file);
   fclose(file);
   
   return Qnil;
