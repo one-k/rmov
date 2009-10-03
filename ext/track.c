@@ -520,7 +520,7 @@ static VALUE track_get_audio_channel_map(VALUE obj)
       } else {
          // unsupported audio channel labels
          ADD_CHANNEL(channels, channel, "UnsupportedByRMov");
-         sprintf(message, "ChannelLabel unsupported by rmov: %d", desc.mChannelLabel);
+         sprintf(message, "ChannelLabel unsupported by rmov: %d", (int)desc.mChannelLabel);
          rb_hash_aset(channel, ID2SYM(rb_intern("message")), rb_str_new2(message));
       }
     }
@@ -573,7 +573,7 @@ static VALUE track_get_audio_channel_map(VALUE obj)
         default:
           // unsupported channels
           highLayoutTag = (layoutTag & 0xff0000) >> 16;
-          sprintf(message, "layoutTag unsupported by rmov: (%dL << 16) | %d", highLayoutTag, numChannels);
+          sprintf(message, "layoutTag unsupported by rmov: (%dL << 16) | %d", (int)highLayoutTag, (int)numChannels);
           for (x=0; x < numChannels; x++) {
             ADD_CHANNEL(channels, channel, "UnsupportedByRMov");
             rb_hash_aset(channel, ID2SYM(rb_intern("message")), rb_str_new2(message));
